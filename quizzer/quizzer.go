@@ -1,23 +1,36 @@
 package quizzer
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
+	"time"
 )
 
-func Quiz(questions []string) (answers []string, err error) {
-	reader := bufio.NewReader(os.Stdin)
+func Quiz(questions []string, seconds time.Duration) (answers []string, err error) {
+	timer := time.NewTimer(seconds * time.Second)
+
+	fmt.Println("Press enter to being...")
+	_, _ = fmt.Scanf("%s\n", nil)
+
+quizloop:
 	for _, q := range questions {
 		fmt.Println(q)
-		text, err := reader.ReadString('\n')
-		text = strings.Replace(text, "\n", "", -1)
-		if err != nil {
-			return []string{}, err
+		answerCh := make(chan string)
+
+		go func() {
+			var text string
+			_, err = fmt.Scanf("%s\n", &text)
+			answerCh <- text
+		}()
+
+		select {
+		case <-timer.C:
+			fmt.Println("Timer expired")
+			break quizloop
+		case a := <-answerCh:
+			answers = append(answers, a)
 		}
-		answers = append(answers, text)
 	}
+
 	return
 }
 
